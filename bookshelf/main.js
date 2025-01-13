@@ -126,3 +126,17 @@ function cariBuku(keyword) {
   // Render buku saat halaman dimuat
   renderBuku();
   
+
+// Menambahkan loading states pada form
+document.querySelectorAll('form').forEach(form => {
+  form.addEventListener('submit', () => {
+    form.classList.add('loading');
+    setTimeout(() => form.classList.remove('loading'), 500);
+  });
+});
+
+// Menambahkan animasi sukses pada buku list
+function addSuccessAnimation(element) {
+  element.classList.add('success');
+  setTimeout(() => element.classList.remove('success'), 300);
+}
