@@ -20,7 +20,7 @@ function createBook(title, author, publicaton, finished){
 function updateBook(id, title, author, publicaton, finished){
     return new Promise((resolve, reject) => {
         db.run(
-            `UPDATE Books SET title = ?, author = ?, publication = ?, finished = ? WHERE id = ?`,
+            `UPDATE Books SET title = ?, author = ?, publicaton = ?, finished = ? WHERE id = ?`,
             [title, author, publicaton, finished, id],
             (err) => {
                 if(err){
@@ -51,37 +51,35 @@ function deleteBook(id){
     })
 }
 
-function getBook(){
+function getBooks(){
     return new Promise((resolve, reject) => {
-        db.run(
+        db.all(
             `SELECT * FROM Books`,
-            [id],
-            (err) => {
+            (err, result) => {
                 if(err){
                     reject(err);
                 }
                 else{
-                    resolve();
+                    resolve(result);
                 }
             }
         )
     })
 }
 
-function searchBook(search){
+function searchBook(search) {
     return new Promise((resolve, reject) => {
-        db.run(
-            `SELECT * FROM Books WHERE title LIKE '%${search}%`,
-            (err) => {
-                if(err){
+        db.all(
+            `SELECT * FROM Books WHERE title LIKE ?`,
+            [`%${search}%`],
+            (err, result) => {
+                if (err) {
                     reject(err);
-                }
-                else{
-                    resolve();
+                } else {
+                    resolve(result);
                 }
             }
-        )
-    })
+        );
+    });
 }
-
-module.exports = {getBook, updateBook, createBook, searchBook, deleteBook}
+module.exports = {getBooks, updateBook, createBook, searchBook, deleteBook}
