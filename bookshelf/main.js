@@ -1,127 +1,197 @@
 // Logika untuk Aplikasi Rak Buku
-
+const API_BASE_URL = "http://localhost:3000/books";
 // Fungsi untuk menyimpan data buku ke localStorage
-function simpanBukuKeLocalStorage(buku) {
-    localStorage.setItem('buku', JSON.stringify(buku));
-  }
   
   // Fungsi untuk memuat data buku dari localStorage
-  function muatBukuDariLocalStorage() {
-    return JSON.parse(localStorage.getItem('buku')) || [];
-  }
-  
-  // Variabel global untuk menyimpan data buku
-  let daftarBuku = muatBukuDariLocalStorage();
-  
-  // Fungsi untuk menambahkan buku baru
-  function tambahBuku(judul, penulis, tahun, selesaiDibaca) {
-    const id = +new Date();
-    const buku = { id, judul, penulis, tahun, selesaiDibaca };
-    daftarBuku.push(buku);
-    simpanBukuKeLocalStorage(daftarBuku);
-    renderBuku();
-  }
-  
-  // Fungsi untuk menghapus buku
-  function hapusBuku(id) {
-    daftarBuku = daftarBuku.filter(buku => buku.id !== id);
-    simpanBukuKeLocalStorage(daftarBuku);
-    renderBuku();
-  }
-  
-  // Fungsi untuk memindahkan buku antar rak
-  function pindahkanRakBuku(id) {
-    const buku = daftarBuku.find(buku => buku.id === id);
-    if (buku) {
-      buku.selesaiDibaca = !buku.selesaiDibaca;
-      simpanBukuKeLocalStorage(daftarBuku);
-      renderBuku();
+  async function muatBukuDariAPI() {
+    try {
+      const response = await fetch(API_BASE_URL);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Gagal memuat data buku:", error);
+      return [];
     }
   }
   
-  // Fungsi untuk mengedit buku
-  function editBuku(id, judulBaru, penulisBaru, tahunBaru, selesaiBaru) {
-    const buku = daftarBuku.find(buku => buku.id === id);
-    if (buku) {
-      buku.judul = judulBaru;
-      buku.penulis = penulisBaru;
-      buku.tahun = tahunBaru;
-      buku.selesaiDibaca = selesaiBaru;
-      simpanBukuKeLocalStorage(daftarBuku);
+  // Variabel global untuk menyimpan data buku
+  let daftarBuku = muatBukuDariAPI();
+  
+  // Fungsi untuk menambahkan buku baru
+  async function tambahBuku(title, author, publicaton, finished) {
+    const buku = { title, author, publicaton, finished };
+    try {
+      const response = await fetch(API_BASE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buku),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error dari server:", errorData);
+        alert("Gagal menambahkan buku: " + errorData.message); // Tambahkan feedback ke pengguna
+      } else {
+        console.log("Buku berhasil ditambahkan");
+        alert("Buku berhasil ditambahkan!"); // Tambahkan feedback ke pengguna
+        renderBuku(); // Pastikan fungsi ini sudah ada untuk memperbarui tampilan
+      }
+    } catch (error) {
+      console.error("Gagal menambahkan buku:", error);
+      alert("Terjadi kesalahan saat menambahkan buku. Coba lagi nanti."); // Tambahkan feedback ke pengguna
+    }
+  }
+  
+  // Event listener untuk menangani submit form
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("bookForm");
+    console.log("Script dijalankan");
+  
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault(); // Mencegah form dari refresh halaman secara default
+  
+      // Ambil nilai dari input form
+      const title = document.getElementById("bookFormTitle").value;
+      const author = document.getElementById("bookFormAuthor").value;
+      const publicaton = document.getElementById("bookFormYear").value;
+      const finished = document.getElementById("bookFormIsComplete").checked ? 1 : 0;
+  
+      // Panggil fungsi tambahBuku
+      await tambahBuku(title, author, publicaton, finished);
+  
+      // Reset form setelah pengiriman
+      form.reset();
+    });
+  });
+
+
+  // Fungsi untuk menghapus buku
+  async function hapusBuku(id) {
+    try {
+      await fetch(`${API_BASE_URL}/${id}`, { method: "DELETE" });
       renderBuku();
+    } catch (error) {
+      console.error("Gagal menghapus buku:", error);
+    }
+  }
+ 
+  
+  // Fungsi untuk mengedit buku
+  async function editBuku(id, title, author, publicaton, finished) {
+    const buku = { title, author, publicaton, finished };
+    try {
+      await fetch(`${API_BASE_URL}/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buku),
+      });
+      renderBuku();
+    } catch (error) {
+      console.error("Gagal memperbarui buku:", error);
     }
   }
   
   // Fungsi untuk merender buku ke halaman
-  function renderBuku(daftar = daftarBuku) {
-    const rakBelumSelesai = document.getElementById('incompleteBookList');
-    const rakSelesai = document.getElementById('completeBookList');
-  
-    rakBelumSelesai.innerHTML = '';
-    rakSelesai.innerHTML = '';
-  
-    daftar.forEach(buku => {
-      const elemenBuku = document.createElement('div');
-      elemenBuku.setAttribute('data-bookid', buku.id);
-      elemenBuku.setAttribute('data-testid', 'bookItem');
-  
-      elemenBuku.innerHTML = `
-        <h3 data-testid="bookItemTitle">${buku.judul}</h3>
-        <p data-testid="bookItemAuthor">Penulis: ${buku.penulis}</p>
-        <p data-testid="bookItemYear">Tahun: ${buku.tahun}</p>
-        <div>
-          <button data-testid="bookItemIsCompleteButton">${buku.selesaiDibaca ? 'Belum selesai dibaca' : 'Selesai dibaca'}</button>
-          <button data-testid="bookItemDeleteButton">Hapus Buku</button>
-          <button data-testid="bookItemEditButton">Edit Buku</button>
-        </div>
-      `;
-  
-      elemenBuku.querySelector('[data-testid="bookItemIsCompleteButton"]').addEventListener('click', () => pindahkanRakBuku(buku.id));
-      elemenBuku.querySelector('[data-testid="bookItemDeleteButton"]').addEventListener('click', () => hapusBuku(buku.id));
-      elemenBuku.querySelector('[data-testid="bookItemEditButton"]').addEventListener('click', () => {
-        const judulBaru = prompt('Masukkan judul baru:', buku.judul);
-        const penulisBaru = prompt('Masukkan penulis baru:', buku.penulis);
-        const tahunBaru = prompt('Masukkan tahun baru:', buku.tahun);
-        const selesaiBaru = confirm('Apakah buku ini selesai dibaca?');
-        editBuku(buku.id, judulBaru, penulisBaru, tahunBaru, selesaiBaru);
-      });
-  
-      if (buku.selesaiDibaca) {
-        rakSelesai.appendChild(elemenBuku);
-      } else {
-        rakBelumSelesai.appendChild(elemenBuku);
-      }
-    });
-  }
+  async function renderBuku() {
+    const response = await muatBukuDariAPI();
 
+    // Pastikan data berbentuk objek dan memiliki properti 'data'
+    if (!response || typeof response !== "object" || !Array.isArray(response.data)) {
+        console.error("Data API tidak sesuai:", response);
+        return;
+    }
+
+    const daftarBuku = response.data; // Akses array 'data' dari objek API
+    const rakBelumSelesai = document.getElementById("incompleteBookList");
+    const rakSelesai = document.getElementById("completeBookList");
+
+    rakBelumSelesai.innerHTML = "";
+    rakSelesai.innerHTML = "";
+
+    daftarBuku.forEach(buku => {
+        const elemenBuku = document.createElement("div");
+        elemenBuku.setAttribute("data-bookid", buku.id);
+
+        elemenBuku.innerHTML = `
+            <h3>${buku.title}</h3>
+            <p>Penulis: ${buku.author}</p>
+            <p>Tahun: ${buku.publicaton}</p>
+            <div>
+                <button>${buku.finished == 0 ? "Selesai dibaca" : "Belum Selesai dibaca"}</button>
+                <button>Hapus Buku</button>
+                <button>Edit Buku</button>
+            </div>
+        `;
+
+        elemenBuku.querySelector("button:nth-child(1)").addEventListener("click", () => {
+          if(buku.finished == 0){
+            buku.finished = 1
+          }
+          else{
+            buku.finished = 0
+          }
+          editBuku(buku.id, buku.title, buku.author, buku.publicaton, buku.finished);
+        });
+        elemenBuku.querySelector("button:nth-child(2)").addEventListener("click", () => hapusBuku(buku.id));
+        elemenBuku.querySelector("button:nth-child(3)").addEventListener("click", () => {
+            const judulBaru = prompt("Masukkan judul baru:", buku.title);
+            const penulisBaru = prompt("Masukkan penulis baru:", buku.author);
+            const tahunBaru = prompt("Masukkan tahun baru:", buku.publicaton);
+            let selesaiBaru = confirm("Apakah buku ini selesai dibaca?");
+            if(selesaiBaru == true){
+              selesaiBaru = 1
+            }
+            else{
+              selesaiBaru = 0
+            }
+            editBuku(buku.id, judulBaru, penulisBaru, tahunBaru, selesaiBaru);
+        });
+
+        if (buku.finished) {
+            rakSelesai.appendChild(elemenBuku);
+        } else {
+            rakBelumSelesai.appendChild(elemenBuku);
+        }
+    });
+}
+
+
+  // UDAH BENER TAPI TINGGAL TAMBAH ELEMENT HTML NYA
   // Fungsi untuk mencari buku berdasarkan judul
-function cariBuku(keyword) {
-    const hasilPencarian = daftarBuku.filter(buku =>
-      buku.judul.toLowerCase().includes(keyword.toLowerCase())
-    );
-    renderBuku(hasilPencarian);
-  }
+  // async function cariBuku(keyword) {
+  //   try {
+  //     // Kirim permintaan ke backend dengan query string keyword
+  //     const response = await fetch(`${API_BASE_URL}/search?title=${keyword}`, {
+  //       method: "GET",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //     });
   
-  // Event listener untuk form pencarian buku
-  document.getElementById('searchBook').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const keyword = document.getElementById('searchBookTitle').value;
-    cariBuku(keyword);
-  });
+  //     // Cek apakah respons berhasil
+  //     if (!response.ok) {
+  //       console.error("Gagal mencari buku di server:", response.status);
+  //       alert("Gagal mencari buku. Coba lagi nanti.");
+  //       return;
+  //     }
   
-  // Event listener untuk form tambah buku
-  document.getElementById('bookForm').addEventListener('submit', function(event) {
-    event.preventDefault();
+  //     // Ambil data hasil pencarian
+  //     const hasilPencarian = await response.json();
   
-    const judul = document.getElementById('bookFormTitle').value;
-    const penulis = document.getElementById('bookFormAuthor').value;
-    const tahun = document.getElementById('bookFormYear').value;
-    const selesaiDibaca = document.getElementById('bookFormIsComplete').checked;
+  //     // Render hasil pencarian
+  //     renderBuku(hasilPencarian);
+  //   } catch (error) {
+  //     console.error("Terjadi kesalahan saat mencari buku:", error);
+  //     alert("Terjadi kesalahan saat mencari buku. Coba lagi nanti.");
+  //   }
+  // }
   
-    tambahBuku(judul, penulis, tahun, selesaiDibaca);
-  
-    this.reset();
-  });
+  // // Event listener untuk form pencarian buku
+  // document.getElementById("searchBook").addEventListener("submit", function(event) {
+  //   event.preventDefault(); // Mencegah perilaku default form
+  //   const keyword = document.getElementById("searchBookTitle").value;
+  //   cariBuku(keyword); // Panggil fungsi cariBuku
+  // });
   
   // Render buku saat halaman dimuat
   renderBuku();

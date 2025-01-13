@@ -3,7 +3,7 @@ const ModelBook = require("../model/book");
 
 const getBook = async (req, res) => {
     try {
-      const result = await ModelBook.getBook();
+      const result = await ModelBook.getBooks();
       res.status(200).send({
         status: 200,
         message: "Get Books Success",
@@ -21,48 +21,52 @@ const getBook = async (req, res) => {
 
   const createBook = async (req, res) => {
     try {
+        const body = req.body;
+
+        // Validasi Input
+
+        // Tambahkan buku ke database
+        const result = await ModelBook.createBook(
+            body.title,
+            body.author,
+            body.publicaton,
+            body.finished
+        );
+
+        // Berikan respons sukses dengan data baru
+        res.status(201).json({
+            status: 201,
+            message: "Succes Create Book",
+            data: result,
+        });
+    } catch (err) {
+        console.error("Error saat membuat buku:", err);
+        res.status(500).json({
+            status: 500,
+            message: "Internal Server Error",
+            error: err.message,
+        });
+    }
+};
+
+  const updateBook = async (req, res) => {
+    try {
+      const id = req.params.id;
       const body = req.body;
       if(!body.title){res.status(400).json({status: 400, message: "Need to input title",error:err.message})}
       if(!body.author){res.status(400).json({status: 400, message: "Need to input author",error:err.message})}
-      if(!body.publication){res.status(400).json({status: 400, message: "Need to input publication",error:err.message})}
-      const result = await ModelBook.createBook(
+      if(!body.publicaton){res.status(400).json({status: 400, message: "Need to input publication",error:err.message})}
+      const result = await ModelBook.updateBook(
+        id,
         body.title,
         body.author,
-        body.publication,
+        body.publicaton,
         body.finished
       );
   
       res.status(200).json({
         status: 200,
-        message: "Succesc Create Book",
-        data: body,
-      });
-    } catch (err) {
-      res.status(500).json({
-        status: 500,
-        message: "Internal Server Error",
-        error: err.message,
-      });
-    }
-  };
-
-  const updateBook = async (req, res) => {
-    try {
-        const id = req.params.id;
-      const body = req.body;
-      if(!body.title){res.status(400).json({status: 400, message: "Need to input title",error:err.message})}
-      if(!body.author){res.status(400).json({status: 400, message: "Need to input author",error:err.message})}
-      if(!body.publication){res.status(400).json({status: 400, message: "Need to input publication",error:err.message})}
-      const result = await ModelBook.updateBook(
-        id,
-        body.title,
-        body.author,
-        body.publication
-      );
-  
-      res.status(200).json({
-        status: 200,
-        message: "Succesc Update Book",
+        message: "Succes Update Book",
         data: body,
       });
     } catch (err) {
@@ -96,9 +100,8 @@ const getBook = async (req, res) => {
 
   const searchBook = async (req, res) => {
     try {
-      const query = req.params.query;
-      if(!id){res.status(400).json({status: 400, message: "Need to query id",error:err.message})}
-      const result = await ModelBook.deleteBook(query);
+      const query = req.query.title;
+      const result = await ModelBook.searchBook(query);
   
       res.status(200).json({
         status: 200,
